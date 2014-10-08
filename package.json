@@ -1,0 +1,18 @@
+{
+  "name": "logic-filter",
+  "version": "0.0.0",
+  "description": "node-logic-filter =================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jirwin/node-logic-filter.git"
+  },
+  "author": "",
+  "license": "Apache v2",
+  "bugs": {
+    "url": "https://github.com/jirwin/node-logic-filter/issues"
+  }
+}
