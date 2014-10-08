@@ -1,7 +1,7 @@
 {
   "name": "logic-filter",
-  "version": "0.0.0",
-  "description": "node-logic-filter =================",
+  "version": "0.0.1",
+  "description": "Given a set of rules, filter a JSON object stream",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,7 +10,10 @@
     "type": "git",
     "url": "git://github.com/jirwin/node-logic-filter.git"
   },
-  "author": "",
+  "author": [
+    "Phoebe Simon <phoebesimon@gmail.com>",
+    "Justin Gallardo <justin.gallardo@gmail.com>"
+  ],
   "license": "Apache v2",
   "bugs": {
     "url": "https://github.com/jirwin/node-logic-filter/issues"
