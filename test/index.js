@@ -389,3 +389,139 @@ test('rule: array equality', function(t) {
   lf.write({'bar': [1, 2, 3]}); //N
   lf.end();
 });
+
+
+test('rule: any', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    any: {
+      'foo': [1, 2, 3]
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 3, '3 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3]}); //N
+  lf.write({'foo': 1}); //Y
+  lf.write({'foo': 2}); //Y
+  lf.write({'foo': 3}); //Y
+  lf.write({'foo': 4}); //N
+  lf.write({'bar': 2}); //N
+  lf.write({}); //N
+  lf.end();
+});
+
+
+test('rule: or -> any', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    or: {
+      any: {
+        'foo': [1, 2, 3]
+      },
+      bar: 'qux'
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 6, '6 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3], 'bar': 'qux'}); //Y
+  lf.write({'foo': 1}); //Y
+  lf.write({'foo': 2}); //Y
+  lf.write({'foo': 3}); //Y
+  lf.write({'foo': 4}); //N
+  lf.write({'bar': 2}); //N
+  lf.write({'foo': 2, 'bar': 'baz'}); //Y
+  lf.write({'foo': 5, 'bar': 'baz'}); //N
+  lf.write({'bar': 'qux'}); //Y
+  lf.write({}); //N
+  lf.end();
+});
+
+
+test('rule: not -> any', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    not: {
+      any: {
+        'foo': [1, 2, 3]
+      },
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 5, '5 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3]}); //Y
+  lf.write({'foo': 1}); //N
+  lf.write({'foo': 2}); //N
+  lf.write({'foo': 3}); //N
+  lf.write({'foo': 4}); //Y
+  lf.write({'bar': 2}); //Y
+  lf.write({'foo': 2, 'bar': 'baz'}); //N
+  lf.write({'foo': 5, 'bar': 'baz'}); //Y
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: multiple field any', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    any: {
+      'foo': [1, 2, 3],
+      'bar': [4, 5, 6]
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 1, '1 object passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3]}); //N
+  lf.write({'foo': 1}); //N
+  lf.write({'foo': 2}); //N
+  lf.write({'foo': 3}); //N
+  lf.write({'foo': 4}); //N
+  lf.write({'bar': 2}); //N
+  lf.write({'foo': 2, 'bar': 4}); //Y
+  lf.write({'foo': 4, 'bar': 4}); //N
+  lf.write({'foo': 2, 'bar': 2}); //N
+  lf.write({'foo': 2, 'bar': 'baz'}); //N
+  lf.write({'foo': 5, 'bar': 'baz'}); //N
+  lf.write({}); //N
+  lf.end();
+});
