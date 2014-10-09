@@ -3,7 +3,7 @@ var test = require('tape');
 var LogicFilter = require('../index');
 
 
-test('test simple rule', function(t) {
+test('rule: simple', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
 
@@ -27,7 +27,7 @@ test('test simple rule', function(t) {
 });
 
 
-test('test and rule', function(t) {
+test('rule: and', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
 
@@ -56,7 +56,7 @@ test('test and rule', function(t) {
 });
 
 
-test('test or rule', function(t) {
+test('rule: or', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
 
@@ -85,7 +85,7 @@ test('test or rule', function(t) {
 });
 
 
-test('test not rule', function(t) {
+test('rule: not', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
 
@@ -112,7 +112,7 @@ test('test not rule', function(t) {
 });
 
 
-test('test not implied and rule', function(t) {
+test('rule: not -> implied and', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
 
@@ -139,5 +139,228 @@ test('test not implied and rule', function(t) {
   lf.write({'foo': 'bar'}); //Y
   lf.write({'bar': 'qux'}); //Y
   lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: not -> and', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    not: {
+      and: {
+        'foo': 'bar',
+        'bar': 'qux'
+      }
+    }
+  });
+
+  //!(foo == bar && bar == qux)
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 5, '5 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
+  lf.write({'foo': 'bar'}); //Y
+  lf.write({'bar': 'qux'}); //Y
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: not -> or', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    not: {
+      or: {
+        'foo': 'bar',
+        'bar': 'qux'
+      }
+    }
+  });
+
+  //!(foo == bar || bar == qux)
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 2, '2 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
+  lf.write({'foo': 'bar'}); //N
+  lf.write({'bar': 'qux'}); //N
+  lf.write({'foo': 'qux', 'bar': 'baz'}); //Y
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: and -> or', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    and: {
+      or: {
+        'foo': 'bar',
+        'bar': 'qux'
+      },
+      'qux': 'baz'
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 3, '3 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
+  lf.write({'foo': 'bar', 'qux': 'baz'}); //Y
+  lf.write({'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
+  lf.write({'qux': 'baz'}); //N
+  lf.write({}); //N
+  lf.end();
+});
+
+
+test('rule: or -> and', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    or: {
+      and: {
+        'foo': 'bar',
+        'bar': 'qux'
+      },
+      'qux': 'baz'
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 7, '7 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
+  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'qux': 'baz'}); //Y
+  lf.write({'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'foo'}); //N
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
+  lf.write({'qux': 'baz'}); //Y
+  lf.write({'qux': 'foo'}); //N
+  lf.write({}); //N
+  lf.end();
+});
+
+
+test('rule: or -> (and not)', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    or: {
+      and: {
+        'foo': 'bar',
+        'bar': 'qux'
+      },
+      not: {
+        'qux': 'baz'
+      }
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 7, '7 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'foo'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //N
+  lf.write({'foo': 'bar', 'qux': 'baz'}); //N
+  lf.write({'bar': 'qux', 'qux': 'baz'}); //N
+  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'foo', 'qux': 'foo'}); //Y
+  lf.write({'qux': 'baz'}); //N
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: and -> (or not)', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    and: {
+      or: {
+        'foo': 'bar',
+        'bar': 'qux'
+      },
+      not: {
+        'qux': 'baz'
+      }
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 7, '7 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'foo'}); //Y
+  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //N
+  lf.write({'foo': 'bar', 'qux': 'baz'}); //N
+  lf.write({'bar': 'qux', 'qux': 'baz'}); //N
+  lf.write({'bar': 'qux', 'qux': 'foo'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //N
+  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
+  lf.write({'foo': 'bar', 'bar': 'foo', 'qux': 'foo'}); //Y
+  lf.write({'qux': 'baz'}); //N
+  lf.write({'foo': 'bar'}); //Y
+  lf.write({'bar': 'bar'}); //N
+  lf.write({}); //N
   lf.end();
 });
