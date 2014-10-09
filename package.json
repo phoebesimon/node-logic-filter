@@ -17,5 +17,8 @@
   "license": "Apache v2",
   "bugs": {
     "url": "https://github.com/jirwin/node-logic-filter/issues"
+  },
+  "dependencies": {
+    "underscore": "~1.7.0"
   }
 }

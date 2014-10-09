@@ -1,6 +1,7 @@
 var util = require('util');
-var _ = require('underscore');
 var Transform = require('stream').Transform;
+
+var _ = require('underscore');
 
 var OPERATORS = {
   'and': 1,
@@ -89,7 +90,7 @@ LogicFilter.prototype._transform = function(obj, encoding, callback) {
   var self = this,
       values = [];
 
-  _.each(Object.keys(this.rules), function(label) {
+  _.each(_.keys(this.rules), function(label) {
     var filter = self.rules[label];
     var toReturn = self._applyFilter('and', filter, obj);
     if (toReturn) {
