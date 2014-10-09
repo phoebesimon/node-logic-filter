@@ -1,7 +1,7 @@
 var through = require('through');
 var JSONStream = require('JSONStream');
 var fs = require('fs');
-var LogicFilter = require('../index').LogicFilter;
+var LogicFilter = require('../index');
 
 var lf = new LogicFilter();
 

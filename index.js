@@ -102,4 +102,4 @@ LogicFilter.prototype._transform = function(obj, encoding, callback) {
   callback();
 };
 
-exports.LogicFilter = LogicFilter;
+module.exports = LogicFilter;
