@@ -364,3 +364,28 @@ test('rule: and -> (or not)', function(t) {
   lf.write({}); //N
   lf.end();
 });
+
+
+test('rule: array equality', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    'foo': [1, 2, 3]
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 1, '1 object passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3]}); //Y
+  lf.write({'foo': [1, 2, 3, 4]}); //N
+  lf.write({'foo': [1, 2]}); //N
+  lf.write({'bar': [1, 2, 3]}); //N
+  lf.end();
+});

@@ -40,7 +40,7 @@ LogicFilter.prototype._compareValue = function(filter, key, obj) {
   }
 
   if (value instanceof Array) {
-    return _.has(obj, key) && _.contains(value, obj[key]);
+    return _.has(obj, key) && _.isEqual(value, obj[key]);
   } else {
     return _.has(obj, key) && obj[key] === value;
   }
