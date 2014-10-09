@@ -1,23 +1,10 @@
-var util = require('util');
-var Readable = require('stream').Readable;
-
 var test = require('tape');
 
 var LogicFilter = require('../index');
 
 
-var TestStream = function() {
-  Readable.call(this, {objectMode: true});
-};
-util.inherits(TestStream, Readable);
-
-TestStream.prototype._read = function() {
-};
-
-
 test('test simple rule', function(t) {
-  var r = new TestStream,
-      lf = new LogicFilter(),
+  var lf = new LogicFilter(),
       counter = 0;
 
   lf.add('simpleRule1', {'foo': 'bar'});
@@ -31,20 +18,17 @@ test('test simple rule', function(t) {
     t.end();
   });
 
-  r.pipe(lf);
-
-  r.push({'foo': 'bar'});
-  r.push({'foo': 'baz'});
-  r.push({'foo': 'qux'});
-  r.push({'foo': 'bar'});
-  r.push({'bar': 'foo'});
-  r.push(null);
+  lf.write({'foo': 'bar'});
+  lf.write({'foo': 'baz'});
+  lf.write({'foo': 'qux'});
+  lf.write({'foo': 'bar'});
+  lf.write({'bar': 'foo'});
+  lf.end();
 });
 
 
 test('test and rule', function(t) {
-  var r = new TestStream,
-      lf = new LogicFilter(),
+  var lf = new LogicFilter(),
       counter = 0;
 
   lf.add('simpleRule1', {
@@ -63,12 +47,10 @@ test('test and rule', function(t) {
     t.end();
   });
 
-  r.pipe(lf);
-
-  r.push({'foo': 'bar', 'bar': 'qux'});
-  r.push({'foo': 'baz', 'bar': 'foo'});
-  r.push({'foo': 'qux', 'baz': 'qux'});
-  r.push({'foo': 'bar', 'bar': 'qux'});
-  r.push({'bar': 'foo', 'qux': 'bar'});
-  r.push(null);
+  lf.write({'foo': 'bar', 'bar': 'qux'});
+  lf.write({'foo': 'baz', 'bar': 'foo'});
+  lf.write({'foo': 'qux', 'baz': 'qux'});
+  lf.write({'foo': 'bar', 'bar': 'qux'});
+  lf.write({'bar': 'foo', 'qux': 'bar'});
+  lf.end();
 });
