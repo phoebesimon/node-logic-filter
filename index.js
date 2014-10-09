@@ -54,7 +54,10 @@ LogicFilter.prototype._applyOperator= function(operator, values) {
     case 'or':
       return values.indexOf(true) !== -1;
     case 'not':
-      return values.indexOf(true) === -1;
+      return !this._applyOperator('and', values);
+      //return values.indexOf(true) === -1;
+      /*var and = values.length !== 0 && values.indexOf(false) === -1;
+      return !and //values.indexOf(true) === -1;*/
     default:
       throw new Error('Applying non-existent operator');
   }
