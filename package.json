@@ -4,7 +4,8 @@
   "description": "Given a set of rules, filter a JSON object stream",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/faucet/bin/cmd.js ./test/*.js"
+    "test": "./node_modules/faucet/bin/cmd.js ./test/*.js",
+    "coverage": "./node_modules/covert/bin/cmd.js ./test/*.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "tape": "~3.0.0",
-    "faucet": "0.0.1"
+    "faucet": "0.0.1",
+    "covert": "~1.0.1"
   }
 }
