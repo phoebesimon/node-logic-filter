@@ -11,7 +11,7 @@ var OPERATORS = {
 
 
 var isObject = function(obj) {
-  return Object.prototype.toString.call(obj) === '[object Object]';
+  return obj && typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Object]';
 }
 
 
@@ -84,6 +84,10 @@ LogicFilter.prototype._applyFilter = function(operator, filter, obj) {
 
   if (!filter) {
     return false;
+  }
+
+  if (!obj) {
+    obj = {};
   }
 
   keys = _.keys(filter);

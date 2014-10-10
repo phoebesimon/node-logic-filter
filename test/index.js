@@ -719,6 +719,39 @@ test('rule: nested object and', function(t) {
 });
 
 
+test('rule: nested object implied and', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    'foo': {
+      'bar': 'baz',
+      'qux': 'bar'
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 1, '1 object passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //Y
+  lf.write({'foo': {'qux': 'bar'}}); //N
+  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //N
+  lf.write({'foo': {'bar': 'baz'}}); //N
+  lf.write({'bar': 'baz', 'qux': 'bar'}); //N
+  lf.write({'foo': 'baz'}); //N
+  lf.write({'foo': 'bar'}); //N
+  lf.write({'bar': {'bar': 'baz'}}); //N
+  lf.write({}); //N
+  lf.end();
+});
+
+
 test('rule: nested object or', function(t) {
   var lf = new LogicFilter(),
       counter = 0;
@@ -1029,4 +1062,45 @@ test('rule: not exists true', function(t) {
   lf.write({'bar': 'foo'}); //Y
   lf.write({}); //Y
   lf.end();
+});
+
+
+test('rule: doubly nested object', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    'metrics': {
+      'duration': {
+        'valueI32': 70
+      }
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 3, '3 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'metrics': {'duration': {'valueI32': 70}}}); //Y
+  lf.write({'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}}}); //Y
+  lf.write({'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}, 'tt_firstbyte': {}}}); //Y
+  lf.write({'metrics': {'duration': {'valueI32': 80}}}); //N
+  lf.write({'metrics': {'duration': {}}}); //N
+  lf.write({'metrics': {'notDuration': {'valueI32': 70}}}); //N
+  lf.write({'metrics': null}); //N
+  lf.end();
+});
+
+
+test('compareValue', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  t.ifError(lf._compareValue({}, 'foo', null, {}));
+  t.end();
 });
