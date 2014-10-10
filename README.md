@@ -6,29 +6,14 @@ node-logic-filter
 logic-filter performs filtering using arbitrary rules on streams of JSON objects and outputs objects tagged with the label of the rule they matched. If an object matches more than one rule, it will be output multiple times with each of the labels.
 
 #Example
-For this example, assume you have a file with JSON objects in `exampleObjects.json` that look like:
-
-```
-{
-  "a": 1,
-  "b": 2
-}
-{
-  "a": 1,
-  "b": 3
-} 
-...
-```
 
 ``` js
 var LogicFilter = require('logic-filter');
-var JSONstream = require('JSONstream');
 var through = require('through');
-var fs = require('fs');
 
 var lf = new LogicFilter();
 
-lf.add('testRule', {
+lf.add('testFilter', {
   "and": {
     "a": 1,
     "not": {
@@ -37,16 +22,36 @@ lf.add('testRule', {
   }
 });
 
-fs.createReadStream('./exampleObjects.json').pipe(JSONstream.parse()).pipe(lf).pipe(through(function(obj) {
+lf.write({"a": 1, "b": 2});
+lf.write({"a": 1, "b": 3});
+lf.write({"a": 1});
+lf.write({"b": 2});
+lf.write({});
+
+lf.pipe(through(function(obj) {
   console.log(JSON.stringify(obj, null, 4));
 }));
 
 ```
+Which will output:
+```
+{
+    "a": 1,
+    "b": 2,
+    "label": "testFilter"
+}
+{
+    "a": 1,
+    "label": "testFilter"
+}
+```
+
 
 ##Filter Language
-Filter rules are JSON objects that tell LogicFilter which objects to allow through. LogicFilter considers a rule to be a match if the value for a key in the rule equals the value for the same key in the object in the stream. There are also a few reserved keywords used for logical expression construction: `and`, `or` and `not`. The following are examples of rules and a simple object they will match:
+Filter rules are JSON objects that tell LogicFilter which objects to allow through. LogicFilter considers a rule to be a match if the value for a key in the rule equals the value for the same key in the object in the stream. There are also a few reserved keywords used for logical expression construction: `and`, `or` and `not`, and two other keywords: `value` and `exists`. The following are examples of rules and a simple object they will match:
 
-Rule:
+Rule: No operators
+In this case, all the fields must be present in the compared object and equal to the values provided
 ```
 {
     "a": 1,
@@ -64,7 +69,7 @@ Matches:
 ```
 Note that in the above, "and" is implied when there is no operator
 
-Rule:
+Rule: And
 This is equivalent to the previous example:
 ```
 {
@@ -84,10 +89,10 @@ Matches:
 }
 ```
 
-Rule:
+Rule: Or
 ```
 {
-    'or': {
+    "or": {
       "a": 1,
       "b": "two"
     }
@@ -103,3 +108,110 @@ Matches:
 }
 ```
 
+Rule: Not
+With `not`, note that `and` is implied when there is more than one key/value pair in the closure. In this case it must be true that !(a == 1 && b == "two").
+```
+{
+  "not": {
+    "a": 1,
+    "b": "two"
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": 1,
+  "b": "one"
+}
+{
+  "a": 2,
+  "b": "two"
+}
+{
+  "c": 3
+}
+```
+
+Rule: Any of several values
+Use an array to specify that a field can be equal to any of several values:
+```
+{
+  "a": [1, 2, 3]
+}
+```
+
+Matches:
+```
+{
+  "a": 1
+}
+{
+  "a": 2
+}
+{
+  "a": 3
+}
+```
+
+Rule: Equals literal array
+Use the `value` keyword to denote that you want to actually compare the value specified:
+```
+{
+  "a": {
+    "value": [1, 2, 3]
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": [1, 2, 3]
+}
+```
+
+Rule: Compare fields in a nested object
+In this example, `and` is implied. You can pass arbitrary operators in here as well
+```
+{
+  "a": {
+    "foo": "bar",
+    "bar": "baz"
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": {
+    "foo": "bar",
+    "bar": "baz"
+  }
+}
+```
+
+Rule: Object deep equal
+Using the `value` keyword will compare the entire value in the filter to the entire value in the JSON object and only pass if they are both deep equal
+```
+{
+  "a": {
+    "value": {
+      "b": 2,
+      "c": 3
+    }
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": {
+    "b": 2,
+    "c": 3
+  }
+}
+```
