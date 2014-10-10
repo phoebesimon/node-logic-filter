@@ -50,7 +50,7 @@ Which will output:
 ##Filter Language
 Filter rules are JSON objects that tell LogicFilter which objects to allow through. LogicFilter considers a rule to be a match if the value for a key in the rule equals the value for the same key in the object in the stream. There are also a few reserved keywords used for logical expression construction: `and`, `or` and `not`, and two other keywords: `value` and `exists`. The following are examples of rules and a simple object they will match:
 
-Rule: No operators
+###Rule: No operators
 In this case, all the fields must be present in the compared object and equal to the values provided
 ```
 {
@@ -69,7 +69,7 @@ Matches:
 ```
 Note that in the above, "and" is implied when there is no operator
 
-Rule: And
+###Rule: And
 This is equivalent to the previous example:
 ```
 {
@@ -89,7 +89,7 @@ Matches:
 }
 ```
 
-Rule: Or
+###Rule: Or
 ```
 {
     "or": {
@@ -108,7 +108,7 @@ Matches:
 }
 ```
 
-Rule: Not
+###Rule: Not
 With `not`, note that `and` is implied when there is more than one key/value pair in the closure. In this case it must be true that !(a == 1 && b == "two").
 ```
 {
@@ -134,7 +134,7 @@ Matches:
 }
 ```
 
-Rule: Any of several values
+###Rule: Any of several values
 Use an array to specify that a field can be equal to any of several values:
 ```
 {
@@ -155,7 +155,7 @@ Matches:
 }
 ```
 
-Rule: Equals literal array
+###Rule: Equals literal array
 Use the `value` keyword to denote that you want to actually compare the value specified:
 ```
 {
@@ -172,7 +172,7 @@ Matches:
 }
 ```
 
-Rule: Compare fields in a nested object
+###Rule: Compare fields in a nested object
 In this example, `and` is implied. You can pass arbitrary operators in here as well
 ```
 {
@@ -193,7 +193,7 @@ Matches:
 }
 ```
 
-Rule: Object deep equal
+###Rule: Object deep equal
 Using the `value` keyword will compare the entire value in the filter to the entire value in the JSON object and only pass if they are both deep equal
 ```
 {
@@ -214,4 +214,36 @@ Matches:
     "c": 3
   }
 }
+```
+
+###Rule: Field exists
+You can also check for whether or not a field exists by using the `exists` keyword, passing it either `true` or `false`:
+```
+{
+  "a": {
+    "exists": true
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": 1
+}
+{
+  "a": "one"
+}
+{
+  "a": true
+}
+{
+  "a": [1, 2, 3]
+}
+{
+  "a": {
+    "b": 2
+  }
+}
+
 ```
