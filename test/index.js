@@ -23,6 +23,8 @@ test('rule: simple', function(t) {
   lf.write({'foo': 'qux'});
   lf.write({'foo': 'bar'});
   lf.write({'bar': 'foo'});
+  lf.write(0);
+  lf.write(undefined);
   lf.end();
 });
 
@@ -519,4 +521,164 @@ test('rule: literal object equality', function(t) {
   lf.write({'bar': {'bar': 'baz'}}); //N
   lf.write({}); //N
   lf.end();
+});
+
+
+test('rule: literal array inequality', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    'not': {
+      'foo': {
+        value: [1, 2, 3]
+      }
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 6, '6 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': [1, 2, 3]}); //N
+  lf.write({'foo': 1}); //Y
+  lf.write({'foo': 2}); //Y
+  lf.write({'foo': 3}); //Y
+  lf.write({'foo': 4}); //Y
+  lf.write({'bar': [1, 2, 3]}); //Y
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: literal object inequality', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule', {
+    'not': {
+      'foo': {
+        value: {
+          'bar': 'baz'
+        }
+      }
+    }
+  });
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 6, '6 object passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': {'bar': 'baz'}}); //N
+  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
+  lf.write({'bar': 'baz'}); //Y
+  lf.write({'foo': 'baz'}); //Y
+  lf.write({'foo': 'bar'}); //Y
+  lf.write({'bar': {'bar': 'baz'}}); //Y
+  lf.write({}); //Y
+  lf.end();
+});
+
+
+test('rule: simple update', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule1', {'foo': 'bar'});
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 3, '3 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar'});
+  lf.write({'foo': 'baz'});
+  lf.write({'foo': 'qux'});
+  lf.write({'foo': 'bar'});
+  lf.write({'bar': 'foo'});
+
+  lf.update('simpleRule1', {'foo': 'baz'});
+
+  lf.write({'foo': 'bar'});
+  lf.write({'foo': 'baz'});
+  lf.write({'foo': 'qux'});
+  lf.write({'foo': 'bar'});
+  lf.write({'bar': 'foo'});
+  lf.end();
+});
+
+
+test('rule: simple remove', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  lf.add('simpleRule1', {'foo': 'bar'});
+
+  lf.on('data', function(obj) {
+    counter++;
+  });
+
+  lf.on('end', function() {
+    t.equal(counter, 2, '2 objects passed through the filter');
+    t.end();
+  });
+
+  lf.write({'foo': 'bar'});
+  lf.write({'foo': 'baz'});
+  lf.write({'foo': 'qux'});
+  lf.write({'foo': 'bar'});
+  lf.write({'bar': 'foo'});
+
+  lf.remove('simpleRule1');
+
+  lf.write({'foo': 'bar'});
+  lf.write({'foo': 'baz'});
+  lf.write({'foo': 'qux'});
+  lf.write({'foo': 'bar'});
+  lf.write({'bar': 'foo'});
+  lf.end();
+});
+
+
+test('bad _applyOperator', function(t) {
+  var lf = new LogicFilter();
+
+  t.throws(lf._applyOperator.bind(lf, 'bad', [true, false, true]),
+           /Applying non-existent operator/, 'Should throw error');
+  t.end();
+});
+
+
+test('null filter', function(t) {
+  var lf = new LogicFilter(),
+      counter = 0;
+
+  t.ifError(lf._applyFilter('and', null, {'foo': 'bar'}));
+  t.end();
+});
+
+
+test('rule: literal object equality', function(t) {
+  var lf = new LogicFilter();
+
+  lf.add('simpleRule', {
+    'and': 'foo'
+  });
+
+  t.throws(lf.write.bind(lf, {'foo': {'bar': 'baz'}}));
+  t.end();
 });
