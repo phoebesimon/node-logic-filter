@@ -229,6 +229,56 @@ Matches:
   }
 }
 ```
+These rules can be deeply nested:
+```
+{
+  "a": {
+    "baz": {
+      "value": {
+        "foo": "bar"
+      },
+    },
+    "qux": {
+      "or": {
+        "blue": "fish",
+        "red": "fish"
+      }
+    }
+  }
+}
+```
+
+Matches:
+```
+{
+  "a": {
+    "baz": {
+      "foo": "bar"
+    },
+    "qux": {
+      "one": "fish",
+      "two": "fish",
+      "red": "fish"
+      "blue": "whale",
+    }
+}
+``` 
+
+Does not match:
+```
+{
+  "a": {
+    "baz": {
+      "fraggle": "rock"
+    },
+    "qux": {
+      "one": "fish",
+      "two": "fish",
+      "red": "fish"
+      "blue": "whale",
+    }
+}
+```
 
 ###Rule: Object deep equal
 Using the `value` keyword will compare the entire value in the filter to the entire value in the JSON object and only pass if they are both deep equal
