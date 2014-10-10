@@ -6,7 +6,44 @@ node-logic-filter
 logic-filter performs filtering using arbitrary rules on streams of JSON objects and outputs objects tagged with the label of the rule they matched. If an object matches more than one rule, it will be output multiple times with each of the labels.
 
 #Example
+```
+var LogicFilter = require('logic-filter');
 
+var lf = new LogicFilter();
+
+lf.add('testFilter', {
+  "and": {
+    "a": 1,
+    "not": {
+      "b": 3
+    }
+  }
+});
+
+lf.on('data', function(obj) {
+  console.log(JSON.stringify(obj, null, 4))
+});
+
+lf.write({"a": 1, "b": 2});
+lf.write({"a": 1, "b": 3});
+lf.write({"a": 1});
+lf.write({"b": 2});
+lf.write({});
+```
+Which outputs:
+```
+{
+    "a": 1,
+    "b": 2,
+    "label": "testFilter"
+}
+{
+    "a": 1,
+    "label": "testFilter"
+}
+```
+
+LogicFilter can also be used as part of a pipeline:
 ``` js
 var LogicFilter = require('logic-filter');
 var through = require('through');
