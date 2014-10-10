@@ -10,6 +10,11 @@ var OPERATORS = {
 };
 
 
+var isObject = function(obj) {
+  return Object.prototype.toString.call(obj) === '[object Object]';
+}
+
+
 var LogicFilter = function() {
   Transform.call(this, {objectMode: true});
 
@@ -32,14 +37,21 @@ LogicFilter.prototype.remove = function(label) {
     delete this.rules[label];
 };
 
-LogicFilter.prototype._compareValue = function(filter, key, obj, literal) {
-  var value = literal ? filter : filter[key];
+LogicFilter.prototype._compareValue = function(filter, key, obj, options) {
+  var value;
+
+  options = options || {}
+  value = options.literal || options.exists ? filter : filter[key];
 
   if (!obj) {
     return false;
   }
 
-  if (literal) {
+  if (options.exists) {
+    return value == obj.hasOwnProperty(key);
+  }
+
+  if (options.literal) {
     return _.isEqual(value, obj[key]);
   }
 
@@ -77,15 +89,22 @@ LogicFilter.prototype._applyFilter = function(operator, filter, obj) {
   keys = _.keys(filter);
 
   _.each(keys, function(key) {
+    var isObj = isObject(filter[key]);
     if (!OPERATORS[key]) {
-      if (filter[key] instanceof Object && filter[key].hasOwnProperty('value')) {
-        values.push(self._compareValue(filter[key].value, key, obj, true));
+      if (isObj) {
+        if (filter[key].hasOwnProperty('exists')) {
+          values.push(self._compareValue(filter[key].exists, key, obj, {exists: true}));
+        } else if (filter[key].hasOwnProperty('value')) {
+          values.push(self._compareValue(filter[key].value, key, obj, {literal: true}));
+        } else {
+          values.push(self._applyFilter('and', filter[key], obj[key]));
+        }
       } else {
         values.push(self._compareValue(filter, key, obj));
       }
     } else if (OPERATORS[key] && !(filter[key] instanceof Object)) {
       throw new Error('Incorrect syntax: Operators must apply to an object');
-    } else if (OPERATORS[key] && filter[key] instanceof Object) {
+    } else if (OPERATORS[key] && isObj) {
       values.push(self._applyFilter(key, filter[key], obj));
     }
   });
