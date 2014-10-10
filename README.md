@@ -3,7 +3,7 @@ node-logic-filter
 
 [![Build Status](https://travis-ci.org/phoebesimon/node-logic-filter.svg?branch=master)](https://travis-ci.org/phoebesimon/node-logic-filter)
 
-logic-filter performs filtering using arbitrary rules on streams of JSON objects and outputs objects tagged with the label of the rule they matched. If an object matches more than one rule, it will be output multiple times with each of the labels.
+logic-filter is a Transform object stream that performs filtering using arbitrary rules on streams of JSON objects and outputs objects tagged with the label of the rule they matched. If an object matches more than one rule, it will be output multiple times with each of the labels.
 
 #Example
 ``` js
