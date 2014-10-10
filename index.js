@@ -6,8 +6,7 @@ var _ = require('underscore');
 var OPERATORS = {
   'and': 1,
   'or': 2,
-  'not': 3,
-  'any': 4
+  'not': 3
 };
 
 
@@ -33,19 +32,19 @@ LogicFilter.prototype.remove = function(label) {
     delete this.rules[label];
 };
 
-LogicFilter.prototype._compareValue = function(operator, filter, key, obj) {
-  var value = filter[key];
+LogicFilter.prototype._compareValue = function(filter, key, obj, literal) {
+  var value = literal ? filter : filter[key];
 
   if (!obj) {
     return false;
   }
 
+  if (literal) {
+    return _.isEqual(value, obj[key]);
+  }
+
   if (value instanceof Array) {
-    if (operator.toLowerCase() === 'any') {
-      return _.has(obj, key) && _.contains(value, obj[key]);
-    } else {
-      return _.has(obj, key) && _.isEqual(value, obj[key]);
-    }
+    return _.has(obj, key) && _.contains(value, obj[key]);
   } else {
     return _.has(obj, key) && obj[key] === value;
   }
@@ -55,7 +54,6 @@ LogicFilter.prototype._compareValue = function(operator, filter, key, obj) {
 LogicFilter.prototype._applyOperator= function(operator, values) {
   switch (operator.toLowerCase()) {
     case 'and':
-    case 'any':
       return values.length !== 0 && values.indexOf(false) === -1;
     case 'or':
       return values.indexOf(true) !== -1;
@@ -80,13 +78,15 @@ LogicFilter.prototype._applyFilter = function(operator, filter, obj) {
 
   _.each(keys, function(key) {
     if (!OPERATORS[key]) {
-      values.push(self._compareValue(operator, filter, key, obj));
-      console.log('COMPARED', operator, key,  values, filter);
+      if (filter[key] instanceof Object && filter[key].hasOwnProperty('value')) {
+        values.push(self._compareValue(filter[key].value, key, obj, true));
+      } else {
+        values.push(self._compareValue(filter, key, obj));
+      }
     } else if (OPERATORS[key] && !(filter[key] instanceof Object)) {
       throw new Error('Incorrect syntax: Operators must apply to an object');
     } else if (OPERATORS[key] && filter[key] instanceof Object) {
       values.push(self._applyFilter(key, filter[key], obj));
-      console.log('Operator', operator, key,  values, filter);
     }
   });
 
