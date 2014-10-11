@@ -1,37 +1,37 @@
 var test = require('tape');
+var tst = require('transform-stream-test');
 
 var LogicFilter = require('../index');
 
 
 test('rule: simple', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule1', {'foo': 'bar'});
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar'});
-  lf.write({'foo': 'baz'});
-  lf.write({'foo': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.write({'bar': 'foo'});
-  lf.write(0);
-  lf.write(undefined);
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule1', {
     and: {
@@ -40,27 +40,29 @@ test('rule: and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'});
-  lf.write({'foo': 'baz', 'bar': 'foo'});
-  lf.write({'foo': 'qux', 'baz': 'qux'});
-  lf.write({'foo': 'bar', 'bar': 'qux'});
-  lf.write({'bar': 'foo', 'qux': 'bar'});
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'foo'},
+      {'foo': 'qux', 'baz': 'qux'},
+      {'foo': 'bar', 'bar': 'qux'},
+      {'bar': 'foo', 'qux': 'bar'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule1', {
     or: {
@@ -69,27 +71,30 @@ test('rule: or', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 3, '3 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'});
-  lf.write({'foo': 'bar', 'bar': 'foo'});
-  lf.write({'foo': 'qux', 'bar': 'qux'});
-  lf.write({'foo': 'qux', 'bar': 'foo'});
-  lf.write({'bar': 'foo', 'qux': 'bar'});
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'qux', 'bar': 'qux'},
+      {'foo': 'qux', 'bar': 'foo'},
+      {'bar': 'foo', 'qux': 'bar'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'bar': 'foo', 'label': 'simpleRule1'},
+      {'foo': 'qux', 'bar': 'qux', 'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
 });
 
 
 test('rule: not', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule1', {
     not: {
@@ -97,26 +102,29 @@ test('rule: not', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'});
-  lf.write({'foo': 'baz', 'bar': 'foo'});
-  lf.write({'bar': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'foo'},
+      {'bar': 'qux'},
+      {'foo': 'bar'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'baz', 'bar': 'foo', 'label': 'simpleRule1'},
+      {'bar': 'qux', 'label': 'simpleRule1'},
+      {'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: not -> implied and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule1', {
     not: {
@@ -126,30 +134,35 @@ test('rule: not -> implied and', function(t) {
   });
 
   //!(foo == bar && bar == qux)
-  lf.on('data', function(obj) {
-    counter++;
-  });
 
-  lf.on('end', function() {
-    t.equal(counter, 5, '5 objects passed through the filter');
-    t.end();
-  });
+  t.plan(1);
 
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': 'qux'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'bar'},
+      {'bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'baz', 'bar': 'qux', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'bar': 'foo', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'bar': 'qux', 'label': 'simpleRule1'},
+      {'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 5 objects',
+    t.ok);
 });
 
 
 test('rule: not -> and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
-  lf.add('simpleRule', {
+  lf.add('simpleRule1', {
     not: {
       and: {
         'foo': 'bar',
@@ -159,28 +172,33 @@ test('rule: not -> and', function(t) {
   });
 
   //!(foo == bar && bar == qux)
-  lf.on('data', function(obj) {
-    counter++;
-  });
 
-  lf.on('end', function() {
-    t.equal(counter, 5, '5 objects passed through the filter');
-    t.end();
-  });
+  t.plan(1);
 
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': 'qux'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'bar'},
+      {'bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'baz', 'bar': 'qux', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'bar': 'foo', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'bar': 'qux', 'label': 'simpleRule1'},
+      {'label': 'simpleRule1'}
+    ],
+    'Rule matched and labeled 5 objects',
+    t.ok);
 });
 
 
 test('rule: not -> or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -192,29 +210,31 @@ test('rule: not -> or', function(t) {
   });
 
   //!(foo == bar || bar == qux)
-  lf.on('data', function(obj) {
-    counter++;
-  });
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
+  t.plan(1);
 
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': 'qux'}); //N
-  lf.write({'foo': 'qux', 'bar': 'baz'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'bar'},
+      {'bar': 'qux'},
+      {'foo': 'qux', 'bar': 'baz'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'qux', 'bar': 'baz', 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: and -> or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     and: {
@@ -226,30 +246,32 @@ test('rule: and -> or', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 3, '3 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //N
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
-  lf.write({'foo': 'bar', 'qux': 'baz'}); //Y
-  lf.write({'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
-  lf.write({'qux': 'baz'}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'bar', 'qux': 'baz'},
+      {'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'qux': 'baz'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'qux': 'baz', 'label': 'simpleRule'},
+      {'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
 });
 
 
 test('rule: or -> and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     or: {
@@ -261,33 +283,39 @@ test('rule: or -> and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 7, '7 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //N
-  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'qux': 'baz'}); //Y
-  lf.write({'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'foo'}); //N
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //N
-  lf.write({'qux': 'baz'}); //Y
-  lf.write({'qux': 'foo'}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'qux': 'baz'},
+      {'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'foo'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'qux': 'baz'},
+      {'qux': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'qux': 'baz', 'label': 'simpleRule'},
+      {'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'foo', 'label': 'simpleRule'},
+      {'qux': 'baz', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });
 
 
 test('rule: or -> (and not)', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     or: {
@@ -301,33 +329,39 @@ test('rule: or -> (and not)', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 7, '7 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'foo'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //N
-  lf.write({'foo': 'bar', 'qux': 'baz'}); //N
-  lf.write({'bar': 'qux', 'qux': 'baz'}); //N
-  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo', 'qux': 'foo'}); //Y
-  lf.write({'qux': 'baz'}); //N
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'foo'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'qux': 'baz'},
+      {'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'bar', 'bar': 'foo', 'qux': 'foo'},
+      {'qux': 'baz'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 'baz', 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'foo', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz', 'label': 'simpleRule'},//
+      {'foo': 'bar', 'bar': 'foo', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'foo', 'qux': 'foo', 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });
 
 
 test('rule: and -> (or not)', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     and: {
@@ -341,64 +375,72 @@ test('rule: and -> (or not)', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 7, '7 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 'bar', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'foo'}); //Y
-  lf.write({'foo': 'baz', 'bar': 'qux', 'qux': 'baz'}); //N
-  lf.write({'foo': 'bar', 'qux': 'baz'}); //N
-  lf.write({'bar': 'qux', 'qux': 'baz'}); //N
-  lf.write({'bar': 'qux', 'qux': 'foo'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'qux', 'qux': 'baz'}); //N
-  lf.write({'foo': 'bar', 'bar': 'foo'}); //Y
-  lf.write({'foo': 'bar', 'bar': 'foo', 'qux': 'foo'}); //Y
-  lf.write({'qux': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': 'bar'}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'foo'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'qux': 'baz'},
+      {'bar': 'qux', 'qux': 'foo'},
+      {'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'qux', 'qux': 'baz'},
+      {'foo': 'bar', 'bar': 'foo'},
+      {'foo': 'bar', 'bar': 'foo', 'qux': 'foo'},
+      {'qux': 'baz'},
+      {'foo': 'bar'},
+      {'bar': 'bar'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 'baz', 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 'baz', 'bar': 'qux', 'qux': 'foo', 'label': 'simpleRule'},
+      {'bar': 'qux', 'qux': 'foo', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'foo', 'label': 'simpleRule'},
+      {'foo': 'bar', 'bar': 'foo', 'qux': 'foo', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });
 
 
 test('rule: any', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': [1, 2, 3]
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 3, '3 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': [1, 2, 3]}); //N
-  lf.write({'foo': 1}); //Y
-  lf.write({'foo': 2}); //Y
-  lf.write({'foo': 3}); //Y
-  lf.write({'foo': 4}); //Y
-  lf.write({'bar': 1}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': 1},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': 2, 'label': 'simpleRule'},
+      {'foo': 3, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
 });
 
 
 test('rule: or -> any', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     or: {
@@ -407,32 +449,37 @@ test('rule: or -> any', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 6, '6 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': [1, 2, 3], 'bar': 'qux'}); //Y
-  lf.write({'foo': 1}); //Y
-  lf.write({'foo': 2}); //Y
-  lf.write({'foo': 3}); //Y
-  lf.write({'foo': 4}); //N
-  lf.write({'bar': 2}); //N
-  lf.write({'foo': 2, 'bar': 'baz'}); //Y
-  lf.write({'foo': 5, 'bar': 'baz'}); //N
-  lf.write({'bar': 'qux'}); //Y
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': [1, 2, 3], 'bar': 'qux'},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': 2},
+      {'foo': 2, 'bar': 'baz'},
+      {'foo': 5, 'bar': 'baz'},
+      {'bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'bar': 'qux', 'label': 'simpleRule'},
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': 2, 'label': 'simpleRule'},
+      {'foo': 3, 'label': 'simpleRule'},
+      {'foo': 2, 'bar': 'baz', 'label': 'simpleRule'},
+      {'bar': 'qux', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 6 objects',
+    t.ok);
 });
 
 
 test('rule: not -> any', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -440,31 +487,35 @@ test('rule: not -> any', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 5, '5 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': [1, 2, 3]}); //Y
-  lf.write({'foo': 1}); //N
-  lf.write({'foo': 2}); //N
-  lf.write({'foo': 3}); //N
-  lf.write({'foo': 4}); //Y
-  lf.write({'bar': 2}); //Y
-  lf.write({'foo': 2, 'bar': 'baz'}); //N
-  lf.write({'foo': 5, 'bar': 'baz'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': 2},
+      {'foo': 2, 'bar': 'baz'},
+      {'foo': 5, 'bar': 'baz'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'label': 'simpleRule'},
+      {'foo': 4, 'label': 'simpleRule'},
+      {'bar': 2, 'label': 'simpleRule'},
+      {'foo': 5, 'bar': 'baz', 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 5 objects',
+    t.ok);
 });
 
 
 test('rule: literal array equality', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -472,29 +523,29 @@ test('rule: literal array equality', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 1, '1 object passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': [1, 2, 3]}); //Y
-  lf.write({'foo': 1}); //N
-  lf.write({'foo': 2}); //N
-  lf.write({'foo': 3}); //N
-  lf.write({'foo': 4}); //N
-  lf.write({'bar': [1, 2, 3]}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': [1, 2, 3]},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
 });
 
 
 test('rule: literal object equality', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -504,29 +555,29 @@ test('rule: literal object equality', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 1, '1 object passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //N
-  lf.write({'bar': 'baz'}); //N
-  lf.write({'foo': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': {'bar': 'baz'}}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'bar': 'baz'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
 });
 
 
 test('rule: literal array inequality', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -536,29 +587,34 @@ test('rule: literal array inequality', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 6, '6 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': [1, 2, 3]}); //N
-  lf.write({'foo': 1}); //Y
-  lf.write({'foo': 2}); //Y
-  lf.write({'foo': 3}); //Y
-  lf.write({'foo': 4}); //Y
-  lf.write({'bar': [1, 2, 3]}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': [1, 2, 3]},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': 2, 'label': 'simpleRule'},
+      {'foo': 3, 'label': 'simpleRule'},
+      {'foo': 4, 'label': 'simpleRule'},
+      {'bar': [1, 2, 3], 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 6 objects',
+    t.ok);
 });
 
 
 test('rule: literal object inequality', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -570,87 +626,113 @@ test('rule: literal object inequality', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 6, '6 object passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
-  lf.write({'bar': 'baz'}); //Y
-  lf.write({'foo': 'baz'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': {'bar': 'baz'}}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'bar': 'baz'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz', 'baz': 'qux'}, 'label': 'simpleRule'},
+      {'bar': 'baz', 'label': 'simpleRule'},
+      {'foo': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'bar': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 6 objects',
+    t.ok);
 });
 
 
 test('rule: simple update', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
-  lf.add('simpleRule1', {'foo': 'bar'});
+  lf.add('simpleRule', {'foo': 'bar'});
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(2);
 
-  lf.on('end', function() {
-    t.equal(counter, 3, '3 objects passed through the filter');
-    t.end();
-  });
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 
-  lf.write({'foo': 'bar'});
-  lf.write({'foo': 'baz'});
-  lf.write({'foo': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.write({'bar': 'foo'});
+  lf.update('simpleRule', {'foo': 'baz'});
 
-  lf.update('simpleRule1', {'foo': 'baz'});
-
-  lf.write({'foo': 'bar'});
-  lf.write({'foo': 'baz'});
-  lf.write({'foo': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.write({'bar': 'foo'});
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'baz', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
 });
 
 
 test('rule: simple remove', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
-  lf.add('simpleRule1', {'foo': 'bar'});
+  lf.add('simpleRule', {'foo': 'bar'});
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(2);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 
-  lf.write({'foo': 'bar'});
-  lf.write({'foo': 'baz'});
-  lf.write({'foo': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.write({'bar': 'foo'});
+  lf.remove('simpleRule');
 
-  lf.remove('simpleRule1');
-
-  lf.write({'foo': 'bar'});
-  lf.write({'foo': 'baz'});
-  lf.write({'foo': 'qux'});
-  lf.write({'foo': 'bar'});
-  lf.write({'bar': 'foo'});
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [],
+    'Rule matched and labeled 1 object',
+    t.ok,
+    100);
 });
 
 
@@ -686,7 +768,7 @@ test('rule: literal object equality', function(t) {
 
 test('rule: nested object and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -697,31 +779,31 @@ test('rule: nested object and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 1, '1 object passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //Y
-  lf.write({'foo': {'qux': 'bar'}}); //N
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //N
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //N
-  lf.write({'foo': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': {'bar': 'baz'}}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz', 'qux': 'bar'}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
 });
 
 
 test('rule: nested object implied and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -730,31 +812,31 @@ test('rule: nested object implied and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 1, '1 object passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //Y
-  lf.write({'foo': {'qux': 'bar'}}); //N
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //N
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //N
-  lf.write({'foo': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': {'bar': 'baz'}}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz', 'qux': 'bar'}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
 });
 
 
 test('rule: nested object or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -765,31 +847,34 @@ test('rule: nested object or', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 4, '4 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //Y
-  lf.write({'foo': {'qux': 'bar'}}); //Y
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //N
-  lf.write({'foo': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': {'bar': 'baz'}}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz', 'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 4 objects',
+    t.ok);
 });
 
 
 test('rule: nested object not -> implied and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -800,31 +885,38 @@ test('rule: nested object not -> implied and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 8, '8 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //N
-  lf.write({'foo': {'qux': 'bar'}}); //Y
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //Y
-  lf.write({'foo': 'baz'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': {'bar': 'baz'}}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'bar': 'baz', 'qux': 'bar', 'label': 'simpleRule'},
+      {'foo': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'bar': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 8 objects',
+    t.ok);
 });
 
 
 test('rule: nested object not -> and', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -837,31 +929,38 @@ test('rule: nested object not -> and', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 8, '8 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //N
-  lf.write({'foo': {'qux': 'bar'}}); //Y
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //Y
-  lf.write({'foo': 'baz'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': {'bar': 'baz'}}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'bar': 'baz', 'qux': 'bar', 'label': 'simpleRule'},
+      {'foo': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'bar': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 8 objects',
+    t.ok);
 });
 
 
 test('rule: nested object or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -872,32 +971,34 @@ test('rule: nested object or', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 4, '4 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //Y
-  lf.write({'foo': {'qux': 'bar'}}); //Y
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'foo': {}}); //N
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //N
-  lf.write({'foo': 'baz'}); //N
-  lf.write({'foo': 'bar'}); //N
-  lf.write({'bar': {'bar': 'baz'}}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 'baz', 'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'qux': 'bar'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 4 objects',
+    t.ok);
 });
 
 
 test('rule: nested object not -> or', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -910,32 +1011,37 @@ test('rule: nested object not -> or', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 6, '6 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': {'bar': 'baz', 'qux': 'bar'}}); //N
-  lf.write({'foo': {'qux': 'bar'}}); //N
-  lf.write({'foo': {'bar': 'baz', 'baz': 'qux'}}); //N
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'foo': {}}); //Y
-  lf.write({'bar': 'baz', 'qux': 'bar'}); //Y
-  lf.write({'foo': 'baz'}); //Y
-  lf.write({'foo': 'bar'}); //Y
-  lf.write({'bar': {'bar': 'baz'}}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': {'bar': 'baz', 'qux': 'bar'}},
+      {'foo': {'qux': 'bar'}},
+      {'foo': {'bar': 'baz', 'baz': 'qux'}},
+      {'foo': {'bar': 'baz'}},
+      {'foo': {}},
+      {'bar': 'baz', 'qux': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'bar'},
+      {'bar': {'bar': 'baz'}},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {}, 'label': 'simpleRule'},
+      {'bar': 'baz', 'qux': 'bar', 'label': 'simpleRule'},
+      {'foo': 'baz', 'label': 'simpleRule'},
+      {'foo': 'bar', 'label': 'simpleRule'},
+      {'bar': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 6 objects',
+    t.ok);
 });
 
 
 test('rule: exists', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -943,31 +1049,37 @@ test('rule: exists', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 7, '7 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 1}); //Y
-  lf.write({'foo': true}); //Y
-  lf.write({'foo': false}); //Y
-  lf.write({'foo': null}); //Y
-  lf.write({'foo': 'one'}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'foo': [1, 2, 3]}); //Y
-  lf.write({'bar': 'foo'}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 1},
+      {'foo': true},
+      {'foo': false},
+      {'foo': null},
+      {'foo': 'one'},
+      {'foo': {'bar': 'baz'}},
+      {'foo': [1, 2, 3]},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': true, 'label': 'simpleRule'},
+      {'foo': false, 'label': 'simpleRule'},
+      {'foo': null, 'label': 'simpleRule'},
+      {'foo': 'one', 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'foo': [1, 2, 3], 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });
 
 
 test('rule: not exists false', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -977,31 +1089,37 @@ test('rule: not exists false', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 7, '7 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 1}); //Y
-  lf.write({'foo': true}); //Y
-  lf.write({'foo': false}); //Y
-  lf.write({'foo': null}); //Y
-  lf.write({'foo': 'one'}); //Y
-  lf.write({'foo': {'bar': 'baz'}}); //Y
-  lf.write({'foo': [1, 2, 3]}); //Y
-  lf.write({'bar': 'foo'}); //N
-  lf.write({}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 1},
+      {'foo': true},
+      {'foo': false},
+      {'foo': null},
+      {'foo': 'one'},
+      {'foo': {'bar': 'baz'}},
+      {'foo': [1, 2, 3]},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': true, 'label': 'simpleRule'},
+      {'foo': false, 'label': 'simpleRule'},
+      {'foo': null, 'label': 'simpleRule'},
+      {'foo': 'one', 'label': 'simpleRule'},
+      {'foo': {'bar': 'baz'}, 'label': 'simpleRule'},
+      {'foo': [1, 2, 3], 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });
 
 
 test('rule: exists false', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'foo': {
@@ -1009,31 +1127,32 @@ test('rule: exists false', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 1}); //N
-  lf.write({'foo': true}); //N
-  lf.write({'foo': false}); //N
-  lf.write({'foo': null}); //N
-  lf.write({'foo': 'one'}); //N
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'foo': [1, 2, 3]}); //N
-  lf.write({'bar': 'foo'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 1},
+      {'foo': true},
+      {'foo': false},
+      {'foo': null},
+      {'foo': 'one'},
+      {'foo': {'bar': 'baz'}},
+      {'foo': [1, 2, 3]},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'bar': 'foo', 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: not exists true', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     not: {
@@ -1043,31 +1162,32 @@ test('rule: not exists true', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 2, '2 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'foo': 1}); //N
-  lf.write({'foo': true}); //N
-  lf.write({'foo': false}); //N
-  lf.write({'foo': null}); //N
-  lf.write({'foo': 'one'}); //N
-  lf.write({'foo': {'bar': 'baz'}}); //N
-  lf.write({'foo': [1, 2, 3]}); //N
-  lf.write({'bar': 'foo'}); //Y
-  lf.write({}); //Y
-  lf.end();
+  fixture.deepEqual([
+      {'foo': 1},
+      {'foo': true},
+      {'foo': false},
+      {'foo': null},
+      {'foo': 'one'},
+      {'foo': {'bar': 'baz'}},
+      {'foo': [1, 2, 3]},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'bar': 'foo', 'label': 'simpleRule'},
+      {'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
 });
 
 
 test('rule: doubly nested object', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   lf.add('simpleRule', {
     'metrics': {
@@ -1077,30 +1197,139 @@ test('rule: doubly nested object', function(t) {
     }
   });
 
-  lf.on('data', function(obj) {
-    counter++;
-  });
+  t.plan(1);
 
-  lf.on('end', function() {
-    t.equal(counter, 3, '3 objects passed through the filter');
-    t.end();
-  });
-
-  lf.write({'metrics': {'duration': {'valueI32': 70}}}); //Y
-  lf.write({'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}}}); //Y
-  lf.write({'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}, 'tt_firstbyte': {}}}); //Y
-  lf.write({'metrics': {'duration': {'valueI32': 80}}}); //N
-  lf.write({'metrics': {'duration': {}}}); //N
-  lf.write({'metrics': {'notDuration': {'valueI32': 70}}}); //N
-  lf.write({'metrics': null}); //N
-  lf.end();
+  fixture.deepEqual([
+      {'metrics': {'duration': {'valueI32': 70}}},
+      {'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}}},
+      {'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}, 'tt_firstbyte': {}}},
+      {'metrics': {'duration': {'valueI32': 80}}},
+      {'metrics': {'duration': {}}},
+      {'metrics': {'notDuration': {'valueI32': 70}}},
+      {'metrics': null},
+      {},
+      0,
+      undefined
+    ], [
+      {'metrics': {'duration': {'valueI32': 70}}, 'label': 'simpleRule'},
+      {'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}}, 'label': 'simpleRule'},
+      {'metrics': {'duration': {'valueI32': 70, 'valueI64': 0}, 'tt_firstbyte': {}}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
 });
 
 
 test('compareValue', function(t) {
   var lf = new LogicFilter(),
-      counter = 0;
+      fixture = tst(t, lf);
 
   t.ifError(lf._compareValue({}, 'foo', null, {}));
   t.end();
+});
+
+
+test('rule: multiple simple', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule1', {'foo': 'bar'});
+  lf.add('simpleRule2', {'bar': 'foo'});
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'bar': 'foo', 'label': 'simpleRule2'}
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
+});
+
+
+test('rule: multiple same simple', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule1', {'foo': 'bar'});
+  lf.add('simpleRule2', {'foo': 'bar'});
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'bar'},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'bar', 'label': 'simpleRule2'},
+      {'foo': 'bar', 'label': 'simpleRule2'}
+    ],
+    'Rule matched and labeled 4 objects',
+    t.ok);
+});
+
+
+test('rule: multiple complex', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('rule1', {
+    or: {
+      'foo': 'bar',
+      'bar': 'baz'
+    }
+  });
+  lf.add('rule2', {
+    and: {
+      'foo': 'bar',
+      'qux': {
+        value: {
+          'a': 1,
+          'b': 2
+        }
+      }
+    }
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'bar', 'bar': 'baz'},
+      {'bar': 'baz'},
+      {'foo': 'bar', 'qux': {'a': 1, 'b': 2}},
+      {'foo': 'bar', 'qux': {'a': 1, 'b': 2, 'c': 3}},
+      {'foo': 'bar', 'qux': 1},
+      {'qux': 'bar'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'rule1'},
+      {'foo': 'bar', 'bar': 'baz', 'label': 'rule1'},
+      {'bar': 'baz', 'label': 'rule1'},
+      {'foo': 'bar', 'qux': {'a': 1, 'b': 2}, 'label': 'rule1'},
+      {'foo': 'bar', 'qux': {'a': 1, 'b': 2}, 'label': 'rule2'},
+      {'foo': 'bar', 'qux': {'a': 1, 'b': 2, 'c': 3}, 'label': 'rule1'},
+      {'foo': 'bar', 'qux': 1, 'label': 'rule1'}
+    ],
+    'Rule matched and labeled 7 objects',
+    t.ok);
 });

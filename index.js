@@ -125,8 +125,10 @@ LogicFilter.prototype._transform = function(obj, encoding, callback) {
     var filter = self.rules[label];
     var toReturn = self._applyFilter('and', filter, obj);
     if (toReturn) {
-      obj.label = label
-      self.push(obj);
+      if (obj !== undefined) {
+        obj.label = label
+        self.push(obj);
+      }
     }
   });
 
