@@ -26,6 +26,6 @@
     "covert": "~1.0.1",
     "faucet": "0.0.1",
     "tape": "~3.0.0",
-    "transform-stream-test": "0.0.7"
+    "transform-stream-test": "0.0.8"
   }
 }
