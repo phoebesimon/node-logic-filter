@@ -92,6 +92,67 @@ test('rule: or', function(t) {
 });
 
 
+test('rule: triple equals any', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule1', {
+    'foo': ['bar', 'baz', 'qux']
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'baz', 'label': 'simpleRule1'},
+      {'foo': 'qux', 'label': 'simpleRule1'},
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
+});
+
+
+test('rule: triple equals ors', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule1', {
+    or: {
+      foo: 'qux',
+      or: {
+        'foo': ['bar', 'baz']
+      }
+    }
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': 'bar'},
+      {'foo': 'baz'},
+      {'foo': 'qux'},
+      {'foo': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': 'bar', 'label': 'simpleRule1'},
+      {'foo': 'baz', 'label': 'simpleRule1'},
+      {'foo': 'qux', 'label': 'simpleRule1'},
+    ],
+    'Rule matched and labeled 3 objects',
+    t.ok);
+});
+
+
 test('rule: not', function(t) {
   var lf = new LogicFilter(),
       fixture = tst(t, lf);
