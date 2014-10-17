@@ -632,6 +632,65 @@ test('rule: literal array equality', function(t) {
 });
 
 
+test('rule: simple array in array', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', {
+    'foo': [[1, 2, 3]]
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': [1, 2, 3]},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
+});
+
+
+test('rule: array/values in array', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', {
+    'foo': [[1, 2, 3], 1, 2, 3]
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': [1, 2, 3]},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'label': 'simpleRule'},
+      {'foo': 1, 'label': 'simpleRule'},
+      {'foo': 2, 'label': 'simpleRule'},
+      {'foo': 3, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 4 object',
+    t.ok);
+});
+
+
 test('rule: literal object equality', function(t) {
   var lf = new LogicFilter(),
       fixture = tst(t, lf);
@@ -843,14 +902,10 @@ test('null filter', function(t) {
 });
 
 
-test('rule: literal object equality', function(t) {
+test('rule: invalid filter throws', function(t) {
   var lf = new LogicFilter();
 
-  lf.add('simpleRule', {
-    and: 'foo'
-  });
-
-  t.throws(lf.write.bind(lf, {'foo': {'bar': 'baz'}}));
+  t.throws(lf._applyFilter.bind(lf, 'and', {and: 'foo'}, {'foo': {'bar': 'baz'}}));
   t.end();
 });
 
@@ -1421,4 +1476,303 @@ test('rule: multiple complex', function(t) {
     ],
     'Rule matched and labeled 7 objects',
     t.ok);
+});
+
+
+test('rule: validation', function(t) {
+  var lf = LogicFilter(),
+      goodRules = {
+        simple: {
+          'foo': 'bar'
+        },
+        simpleAnd: {
+          and: {
+            'foo': 'bar',
+            'bar': 'baz'
+          }
+        },
+        simpleImpliedAnd: {
+          'foo': 'bar',
+          'bar': 'baz'
+        },
+        simpleOr: {
+          or: {
+            'foo': 'bar',
+            'bar': 'baz'
+          }
+        },
+        simpleNot: {
+          not: {
+            'foo': 'bar'
+          }
+        },
+        simpleAny: {
+          'foo': [1, 2, 3]
+        },
+        notImpliedAnd: {
+          not: {
+            'foo': 'bar',
+            'bar': 'baz'
+          }
+        },
+        notAnd: {
+          not: {
+            and: {
+              'foo': 'bar',
+              'bar': 'baz'
+            }
+          }
+        },
+        notOr: {
+          not: {
+            or: {
+              'foo': 'bar',
+              'bar': 'baz'
+            }
+          }
+        },
+        simpleValue: {
+          'foo': {
+            value: [1, 2, 3]
+          }
+        },
+        simpleValue2: {
+          'foo': {
+            value: {
+              'foo': 'bar'
+            }
+          }
+        },
+        simpleValue3: {
+          'foo': {
+            value: 'bar'
+          }
+        },
+        simpleExistsTrue: {
+          'foo': {
+            exists: true
+          }
+        },
+        simpleExistsFalse: {
+          'foo': {
+            exists: false
+          }
+        },
+        nestedAndOr: {
+          and: {
+            or: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedOrAnd: {
+          or: {
+            and: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedNotAnd: {
+          not: {
+            and: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedAndNot: {
+          and: {
+            not: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedNotOr: {
+          not: {
+            or: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedOrNot: {
+          or: {
+            not: {
+              'foo': 'bar',
+              'bar': 'baz'
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedAndExists: {
+          and: {
+            'foo': {
+              exists: true
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedOrExists: {
+          or: {
+            'foo': {
+              exists: true
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedNotExists: {
+          not: {
+            'foo': {
+              exists: true
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedAndValue: {
+          and: {
+            'foo': {
+              value: {
+                'bar': 'baz'
+              }
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedOrValue: {
+          or: {
+            'foo': {
+              value: {
+                'bar': 'baz'
+              }
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedNotValue: {
+          not: {
+            'foo': {
+              value: {
+                'bar': 'baz'
+              }
+            },
+            'qux': 'foo'
+          }
+        },
+        nestedAndAny: {
+          and: {
+            'foo': [1, 2, 3],
+            'qux': 'foo'
+          }
+        },
+        nestedOrAny: {
+          or: {
+            'foo': [1, 2, 3],
+            'qux': 'foo'
+          }
+        },
+        nestedNotAny: {
+          not: {
+            'foo': [1, 2, 3],
+            'qux': 'foo'
+          }
+        }
+      },
+      badRules = {
+        emptyRule: {},
+        nullRule: null,
+        undefinedRule: undefined,
+        badExists: {
+          'foo': {
+            exists: null
+          }
+        },
+        badExists2: {
+          'foo': {
+            exists: undefined
+          }
+        },
+        badExists3: {
+          'foo': {
+            exists: 0
+          }
+        },
+        badExists4: {
+          'foo': {
+            exists: 1
+          }
+        },
+        badExists5: {
+          'foo': {
+            exists: 'bar'
+          }
+        },
+        badAnd: {
+          and: 'foo'
+        },
+        badOr: {
+          or: 'foo'
+        },
+        badNot: {
+          not: 'foo'
+        },
+        badAndNot: {
+          and: {
+            not: 'foo'
+          }
+        },
+        badAndOr: {
+          and: {
+            or: 'foo'
+          }
+        },
+        badOrAnd: {
+          or: {
+            and: 'foo'
+          }
+        },
+        badOrNot: {
+          or: {
+            not: 'foo'
+          }
+        },
+        badNotAnd: {
+          not: {
+            and: 'foo'
+          }
+        },
+        badNotOr: {
+          not: {
+            or: 'foo'
+          }
+        }
+      };
+
+
+  Object.keys(goodRules).forEach(function(rule) {
+    t.ok(LogicFilter.validate(goodRules[rule]), 'Rule: ' + rule + ' should pass validation');
+  });
+
+  Object.keys(badRules).forEach(function(rule) {
+    t.ifError(LogicFilter.validate(badRules[rule]), 'Rule: ' + rule + ' should fail validation');
+  });
+
+  t.end();
+});
+
+test('rule: add/update invalid rules', function(t) {
+  var lf = new LogicFilter();
+
+  t.ifError(lf.add('invalidRule', {}), 'Empty rule should not be added');
+  lf.add('simpleRule', {'foo': 'bar'});
+  t.ifError(lf.update('simpleRule', {}), 'Rule cannot be updated to empty rule');
+  t.ifError(lf.update('newRule', {'foo': 'bar'}), 'Nonexistent rule cannot be updated');
+  t.end();
 });

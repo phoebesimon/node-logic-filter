@@ -23,13 +23,71 @@ var LogicFilter = function() {
 util.inherits(LogicFilter, Transform);
 
 
+LogicFilter.validate = function(rule) {
+  var values = [];
+
+  if (_.isEqual(rule, {}) || rule === null || rule === undefined) {
+    return false;
+  }
+
+  function _validate(rule) {
+    _.each(_.keys(rule), function(key) {
+      var isObj = isObject(rule[key]);
+
+      if (!OPERATORS[key]) {
+        if (isObj) {
+          if (rule[key].hasOwnProperty('exists')) {
+            if(!(rule[key].exists === true || rule[key].exists === false)) {
+              values.push(false);
+            }
+          } else if (rule[key].hasOwnProperty('value')) {
+            values.push(true);
+          } else {
+            values.push(_validate(rule[key]));
+          }
+        } else {
+          values.push(true);
+        }
+      } else {
+        if (!isObj) {
+          values.push(false);
+        } else {
+          values.push(_validate(rule[key]));
+        }
+      }
+    });
+  }
+
+  _validate(rule);
+  return values.indexOf(false) === -1;
+};
+
+
 LogicFilter.prototype.add = function(label, rule) {
-  this.rules[label] = rule;
+  var isValid = LogicFilter.validate(rule);
+
+  if (isValid) {
+    this.rules[label] = rule;
+    return true;
+  }
+
+  return false;
 };
 
 
 LogicFilter.prototype.update = function(label, rule) {
-  this.rules[label] = rule;
+  var isValid = LogicFilter.validate(rule);
+
+  if (!this.rules.hasOwnProperty(label)) {
+    return false;
+  }
+
+  if (isValid) {
+    this.rules[label] = rule;
+    return true;
+  }
+
+  return false;
 };
 
 
@@ -57,6 +115,7 @@ LogicFilter.prototype._compareValue = function(filter, key, obj, options) {
     return _.isEqual(value, obj[key]);
   }
 
+  //[[1, 2, 3]]
   if (value instanceof Array) {
     if (_.has(obj, key)) {
       for (i = 0; i < value.length; i++) {
@@ -115,7 +174,7 @@ LogicFilter.prototype._applyFilter = function(operator, filter, obj) {
       } else {
         values.push(self._compareValue(filter, key, obj));
       }
-    } else if (OPERATORS[key] && !(filter[key] instanceof Object)) {
+    } else if (OPERATORS[key] && !isObj) {
       throw new Error('Incorrect syntax: Operators must apply to an object');
     } else if (OPERATORS[key] && isObj) {
       values.push(self._applyFilter(key, filter[key], obj));
