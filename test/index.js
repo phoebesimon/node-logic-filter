@@ -438,6 +438,34 @@ test('rule: any', function(t) {
 });
 
 
+test('rule: any with array', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', {
+    'foo': [[1, 2, 3]]
+  });
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': [1, 2, 3]},
+      {'foo': 1},
+      {'foo': 2},
+      {'foo': 3},
+      {'foo': 4},
+      {'bar': 1},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': [1, 2, 3], 'label': 'simpleRule'},
+    ],
+    'Rule matched and labeled 1 objects',
+    t.ok);
+});
+
+
 test('rule: or -> any', function(t) {
   var lf = new LogicFilter(),
       fixture = tst(t, lf);

@@ -38,7 +38,9 @@ LogicFilter.prototype.remove = function(label) {
 };
 
 LogicFilter.prototype._compareValue = function(filter, key, obj, options) {
-  var value;
+  var found = false,
+      i = 0,
+      value;
 
   options = options || {}
   value = options.literal || options.exists ? filter : filter[key];
@@ -56,7 +58,14 @@ LogicFilter.prototype._compareValue = function(filter, key, obj, options) {
   }
 
   if (value instanceof Array) {
-    return _.has(obj, key) && _.contains(value, obj[key]);
+    if (_.has(obj, key)) {
+      for (i = 0; i < value.length; i++) {
+        if (!found) {
+          found = _.isEqual(value[i], obj[key]);
+        }
+      }
+    }
+    return found;
   } else {
     return _.has(obj, key) && obj[key] === value;
   }
