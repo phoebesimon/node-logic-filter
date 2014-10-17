@@ -1,19 +1,14 @@
 var util = require('util');
 var Transform = require('stream').Transform;
+var logicFilterString = require('logic-filter-strings');
 
 var _ = require('underscore');
 
+
 var OPERATORS = {
-  'and': 1,
-  'or': 2,
-  'not': 3
-};
-
-
-var isObject = function(obj) {
-  return obj && typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Object]';
+  '&&': 1,
+  '||': 2
 }
-
 
 var LogicFilter = function() {
   Transform.call(this, {objectMode: true});
@@ -23,71 +18,35 @@ var LogicFilter = function() {
 util.inherits(LogicFilter, Transform);
 
 
-LogicFilter.validate = function(rule) {
-  var values = [];
+LogicFilter.prototype.add = function(label, rule) {
+  var _rule = logicFilterString(rule);
 
-  if (_.isEqual(rule, {}) || rule === null || rule === undefined) {
+  if (!_rule.status) {
     return false;
   }
+  rule = _rule.value;
 
-  function _validate(rule) {
-    _.each(_.keys(rule), function(key) {
-      var isObj = isObject(rule[key]);
-
-      if (!OPERATORS[key]) {
-        if (isObj) {
-          if (rule[key].hasOwnProperty('exists')) {
-            if(!(rule[key].exists === true || rule[key].exists === false)) {
-              values.push(false);
-            }
-          } else if (rule[key].hasOwnProperty('value')) {
-            values.push(true);
-          } else {
-            values.push(_validate(rule[key]));
-          }
-        } else {
-          values.push(true);
-        }
-      } else {
-        if (!isObj) {
-          values.push(false);
-        } else {
-          values.push(_validate(rule[key]));
-        }
-      }
-    });
-  }
-
-  _validate(rule);
-  return values.indexOf(false) === -1;
-};
-
-
-LogicFilter.prototype.add = function(label, rule) {
-  var isValid = LogicFilter.validate(rule);
-
-  if (isValid) {
-    this.rules[label] = rule;
-    return true;
-  }
-
-  return false;
+  this.rules[label] = rule;
+  return true;
 };
 
 
 LogicFilter.prototype.update = function(label, rule) {
-  var isValid = LogicFilter.validate(rule);
+  var _rule;
 
   if (!this.rules.hasOwnProperty(label)) {
     return false;
   }
 
-  if (isValid) {
-    this.rules[label] = rule;
-    return true;
-  }
+  _rule = logicFilterString(rule);
 
-  return false;
+  if (!_rule.status) {
+    return false;
+  }
+  rule = _rule.value;
+
+  this.rules[label] = rule;
+  return true;
 };
 
 
@@ -95,94 +54,52 @@ LogicFilter.prototype.remove = function(label) {
     delete this.rules[label];
 };
 
-LogicFilter.prototype._compareValue = function(filter, key, obj, options) {
-  var found = false,
-      i = 0,
-      value;
 
-  options = options || {}
-  value = options.literal || options.exists ? filter : filter[key];
+LogicFilter.prototype._exists = function(key, obj) {
+  return obj && obj.hasOwnProperty(key);
+};
 
-  if (!obj) {
-    return false;
-  }
 
-  if (options.exists) {
-    return value == obj.hasOwnProperty(key);
-  }
+LogicFilter.prototype._condition = function(filter, obj) {
+  var key = filter[0],
+      value = filter[2],
+      result = true,
+      keys = key.split('.');
 
-  if (options.literal) {
-    return _.isEqual(value, obj[key]);
-  }
-
-  //[[1, 2, 3]]
-  if (value instanceof Array) {
-    if (_.has(obj, key)) {
-      for (i = 0; i < value.length; i++) {
-        if (!found) {
-          found = _.isEqual(value[i], obj[key]);
-        }
-      }
+  function check(_obj, _key, _keys) {
+    if (_keys.length === 0) {
+      return result && _obj && _obj.hasOwnProperty(_key) && _.isEqual(_obj[_key], value);
     }
-    return found;
-  } else {
-    return _.has(obj, key) && obj[key] === value;
+    return result && _obj && _obj.hasOwnProperty(_key) && check(_obj[_key], _keys.shift(), _keys);
   }
+
+  result = check(obj, keys.shift(), keys);
+  return result;
 };
 
 
-LogicFilter.prototype._applyOperator= function(operator, values) {
-  switch (operator.toLowerCase()) {
-    case 'and':
-      return values.length !== 0 && values.indexOf(false) === -1;
-    case 'or':
-      return values.indexOf(true) !== -1;
-    case 'not':
-      return !this._applyOperator('and', values);
-    default:
-      throw new Error('Applying non-existent operator');
-  }
-};
-
-
-LogicFilter.prototype._applyFilter = function(operator, filter, obj) {
+LogicFilter.prototype._applyFilter = function(filter, obj) {
   var self = this,
-      keys,
-      values = [];
+      result = true;
 
-  if (!filter) {
-    return false;
-  }
-
-  if (!obj) {
-    obj = {};
-  }
-
-  keys = _.keys(filter);
-
-  _.each(keys, function(key) {
-    var isObj = isObject(filter[key]);
-    if (!OPERATORS[key]) {
-      if (isObj) {
-        if (filter[key].hasOwnProperty('exists')) {
-          values.push(self._compareValue(filter[key].exists, key, obj, {exists: true}));
-        } else if (filter[key].hasOwnProperty('value')) {
-          values.push(self._compareValue(filter[key].value, key, obj, {literal: true}));
-        } else {
-          values.push(self._applyFilter('and', filter[key], obj[key]));
-        }
-      } else {
-        values.push(self._compareValue(filter, key, obj));
-      }
-    } else if (OPERATORS[key] && !isObj) {
-      throw new Error('Incorrect syntax: Operators must apply to an object');
-    } else if (OPERATORS[key] && isObj) {
-      values.push(self._applyFilter(key, filter[key], obj));
+  if (filter.length === 1 && typeof filter[0] === 'string') {
+    result = result && self._exists(filter[0], obj);
+  } else if (filter.length === 3 && (filter[1] === '==' || filter[1] === '===')) {
+    result = result && self._condition(filter, obj);
+  } else if (filter.length === 3 && (filter[1] === '!=' || filter[1] === '!==')) {
+    result = result && !self._condition(filter, obj);
+  } else if (filter.length === 2 && filter[0] === '!') {
+    result = result && !self._applyFilter(filter[1], obj);
+  } else if (filter.length === 3 && OPERATORS[filter[1]]) {
+    if (filter[1] === '&&') {
+      result = result && (self._applyFilter(filter[0], obj) && self._applyFilter(filter[2], obj));
+    } else {
+      result = result && (self._applyFilter(filter[0], obj) || self._applyFilter(filter[2], obj));
     }
-  });
+  }
 
-  return self._applyOperator(operator, values);
-};
+  return result;
+}
 
 
 LogicFilter.prototype._transform = function(obj, encoding, callback) {
@@ -191,7 +108,7 @@ LogicFilter.prototype._transform = function(obj, encoding, callback) {
 
   _.each(_.keys(this.rules), function(label) {
     var filter = self.rules[label];
-    var toReturn = self._applyFilter('and', filter, obj);
+    var toReturn = self._applyFilter(filter, obj);
     if (toReturn) {
       if (obj !== undefined) {
         obj.label = label
@@ -202,5 +119,6 @@ LogicFilter.prototype._transform = function(obj, encoding, callback) {
 
   callback();
 };
+
 
 module.exports = LogicFilter;
