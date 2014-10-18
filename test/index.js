@@ -1064,8 +1064,7 @@ test('setDelimiter', function(t) {
     100);
 });
 
-//FAIL (fix in next release of logic-filter-string)
-/*test('rule: doubly nested object string', function(t) {
+test('rule: doubly nested object string', function(t) {
   var lf = new LogicFilter(),
       fixture = tst(t, lf);
 
@@ -1091,4 +1090,4 @@ test('setDelimiter', function(t) {
     ],
     'Rule matched and labeled 3 objects',
     t.ok);
-});*/
+});
