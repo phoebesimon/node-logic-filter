@@ -834,7 +834,7 @@ test('rule: exists string', function(t) {
 });
 
 
-test('rule: exists false string', function(t) {
+test('rule: not exists string', function(t) {
   var lf = new LogicFilter(),
       fixture = tst(t, lf);
 
@@ -859,6 +859,66 @@ test('rule: exists false string', function(t) {
       {'label': 'simpleRule'}
     ],
     'Rule matched and labeled 2 objects',
+    t.ok);
+});
+
+test('rule: exists nested string', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', '!foo.bar');
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': {'bar': 1}},
+      {'foo': {'bar': true}},
+      {'foo': {'bar': false}},
+      {'foo': {'bar': null}},
+      {'foo': {'bar': 'one'}},
+      {'foo': {'bar': {'bar': 'baz'}}},
+      {'foo': {'bar': [1, 2, 3]}},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'bar': 'foo', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 1 object',
+    t.ok);
+});
+
+test('rule: not exists nested string', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', 'foo.bar');
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': {'bar': 1}},
+      {'foo': {'bar': true}},
+      {'foo': {'bar': false}},
+      {'foo': {'bar': null}},
+      {'foo': {'bar': 'one'}},
+      {'foo': {'bar': {'bar': 'baz'}}},
+      {'foo': {'bar': [1, 2, 3]}},
+      {'bar': 'foo'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': 1}, 'label': 'simpleRule'},
+      {'foo': {'bar': true}, 'label': 'simpleRule'},
+      {'foo': {'bar': false}, 'label': 'simpleRule'},
+      {'foo': {'bar': null}, 'label': 'simpleRule'},
+      {'foo': {'bar': 'one'}, 'label': 'simpleRule'},
+      {'foo': {'bar': {'bar': 'baz'}}, 'label': 'simpleRule'},
+      {'foo': {'bar': [1, 2, 3]}, 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 7 objects',
     t.ok);
 });
 
@@ -922,7 +982,84 @@ test('rule: simple remove', function(t) {
       0,
       undefined
     ], [],
-    'Rule matched and labeled 1 object',
+    'Rule matched and labeled 0 objects',
+    t.ok,
+    100);
+});
+
+
+test('setDelimiter option', function(t) {
+  var lf = new LogicFilter({'delimiter': '_'}),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', 'foo.bar == "baz"');
+  lf.add('simpleRule2', 'foo_bar == "baz"');
+
+  t.plan(1);
+
+  fixture.deepEqual([
+      {'foo': {'bar': "baz"}},
+      {'foo.bar': 'baz'},
+      {'foo_bar': 'baz'},
+      {'foo': {'bar': "qux"}},
+      {'foo.bar': 'qux'},
+      {'foo:bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': "baz"}, 'label': 'simpleRule2'},
+      {'foo.bar': 'baz', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
+});
+
+
+test('setDelimiter', function(t) {
+  var lf = new LogicFilter(),
+      fixture = tst(t, lf);
+
+  lf.add('simpleRule', 'foo.bar == "baz"');
+  lf.add('simpleRule2', 'foo_bar == "baz"');
+
+  t.plan(2);
+
+  console.log()
+  fixture.deepEqual([
+      {'foo': {'bar': "baz"}},
+      {'foo.bar': 'baz'},
+      {'foo_bar': 'baz'},
+      {'foo': {'bar': "qux"}},
+      {'foo.bar': 'qux'},
+      {'foo:bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': "baz"}, 'label': 'simpleRule'},
+      {'foo_bar': 'baz', 'label': 'simpleRule2'}
+    ],
+    'Rule matched and labeled 2 objects',
+    t.ok);
+
+  lf.setDelimiter('_');
+
+  fixture.deepEqual([
+      {'foo': {'bar': "baz"}},
+      {'foo.bar': 'baz'},
+      {'foo_bar': 'baz'},
+      {'foo': {'bar': "qux"}},
+      {'foo.bar': 'qux'},
+      {'foo:bar': 'qux'},
+      {},
+      0,
+      undefined
+    ], [
+      {'foo': {'bar': "baz"}, 'label': 'simpleRule2'},
+      {'foo.bar': 'baz', 'label': 'simpleRule'}
+    ],
+    'Rule matched and labeled 2 objects',
     t.ok,
     100);
 });

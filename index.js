@@ -10,10 +10,12 @@ var OPERATORS = {
   '||': 2
 }
 
-var LogicFilter = function() {
+var LogicFilter = function(options) {
+  options = options || {};
   Transform.call(this, {objectMode: true});
 
   this.rules = {};
+  this.delimiter = options.delimiter || '.';
 };
 util.inherits(LogicFilter, Transform);
 
@@ -51,12 +53,27 @@ LogicFilter.prototype.update = function(label, rule) {
 
 
 LogicFilter.prototype.remove = function(label) {
-    delete this.rules[label];
+  delete this.rules[label];
 };
 
 
+LogicFilter.prototype.setDelimiter = function(delimiter) {
+  this.delimiter = delimiter;
+}
+
+
 LogicFilter.prototype._exists = function(key, obj) {
-  return obj && obj.hasOwnProperty(key);
+  var result = true,
+      keys = key.split(this.delimiter);
+
+  function check(_obj, _key, _keys) {
+    if (_keys.length === 0) {
+      return result && _obj && _obj.hasOwnProperty(_key);
+    }
+    return result && _obj && _obj.hasOwnProperty(_key) && check(_obj[_key], _keys.shift(), _keys);
+  }
+  result = check(obj, keys.shift(), keys);
+  return result;
 };
 
 
@@ -64,7 +81,7 @@ LogicFilter.prototype._condition = function(filter, obj) {
   var key = filter[0],
       value = filter[2],
       result = true,
-      keys = key.split('.');
+      keys = key.split(this.delimiter);
 
   function check(_obj, _key, _keys) {
     if (_keys.length === 0) {
