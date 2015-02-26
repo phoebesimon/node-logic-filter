@@ -20,6 +20,7 @@
     "url": "https://github.com/jirwin/node-logic-filter/issues"
   },
   "dependencies": {
+    "logic-filter-strings": "0.0.2",
     "underscore": "~1.7.0"
   },
   "devDependencies": {
